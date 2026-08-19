@@ -14,6 +14,9 @@ import org.springframework.util.StringUtils;
 @Service
 public class SmsServiceImpl implements SmsService {
 
+    private static final String WHATSAPP_CHANNEL = "whatsapp";
+    private static final String WHATSAPP_PREFIX = "whatsapp:";
+
     @Value("${twilio.account-sid:}")
     private String accountSid;
 
@@ -23,19 +26,39 @@ public class SmsServiceImpl implements SmsService {
     @Value("${twilio.phone-number:}")
     private String fromPhoneNumber;
 
+    /**
+     * "sms" or "whatsapp". WhatsApp is useful on a Twilio trial for destinations where
+     * carrier SMS requires registered templates (e.g. India's DLT rules), since sandbox
+     * WhatsApp accepts free-form text.
+     */
+    @Value("${twilio.channel:sms}")
+    private String channel;
+
+    /** Twilio's shared WhatsApp sandbox sender; recipients must join the sandbox first. */
+    @Value("${twilio.whatsapp-from:+14155238886}")
+    private String whatsappFrom;
+
     private boolean configured;
+
+    private boolean isWhatsApp() {
+        return WHATSAPP_CHANNEL.equalsIgnoreCase(channel);
+    }
+
+    private String sender() {
+        return isWhatsApp() ? whatsappFrom : fromPhoneNumber;
+    }
 
     @PostConstruct
     public void init() {
         configured = StringUtils.hasText(accountSid)
                 && StringUtils.hasText(authToken)
-                && StringUtils.hasText(fromPhoneNumber);
+                && StringUtils.hasText(sender());
 
         if (configured) {
             Twilio.init(accountSid, authToken);
-            log.info("Twilio SMS enabled (from {})", fromPhoneNumber);
+            log.info("Twilio enabled — channel={} from={}", isWhatsApp() ? "whatsapp" : "sms", sender());
         } else {
-            log.info("Twilio not configured — SMS notifications will be logged instead of sent. "
+            log.info("Twilio not configured — notifications will be logged instead of sent. "
                     + "Set twilio.account-sid / auth-token / phone-number to enable.");
         }
     }
@@ -47,19 +70,22 @@ public class SmsServiceImpl implements SmsService {
     @Override
     public void sendSms(String toPhoneNumber, String message) {
         if (!StringUtils.hasText(toPhoneNumber)) {
-            log.debug("Skipping SMS — recipient has no phone number on file");
+            log.debug("Skipping notification — recipient has no phone number on file");
             return;
         }
         if (!configured) {
-            log.info("[SMS not sent — Twilio disabled] to={} message={}", toPhoneNumber, message);
+            log.info("[not sent — Twilio disabled] to={} message={}", toPhoneNumber, message);
             return;
         }
 
+        String to = isWhatsApp() ? WHATSAPP_PREFIX + toPhoneNumber : toPhoneNumber;
+        String from = isWhatsApp() ? WHATSAPP_PREFIX + sender() : sender();
+
         try {
-            Message.creator(new PhoneNumber(toPhoneNumber), new PhoneNumber(fromPhoneNumber), message).create();
-            log.info("SMS sent to {}", toPhoneNumber);
+            Message.creator(new PhoneNumber(to), new PhoneNumber(from), message).create();
+            log.info("Notification sent to {} via {}", toPhoneNumber, isWhatsApp() ? "whatsapp" : "sms");
         } catch (Exception ex) {
-            log.warn("Failed to send SMS to {}: {}", toPhoneNumber, ex.getMessage());
+            log.warn("Failed to send notification to {}: {}", toPhoneNumber, ex.getMessage());
         }
     }
 }
