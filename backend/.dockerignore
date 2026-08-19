@@ -1,0 +1,7 @@
+target/
+config/
+.git
+.gitignore
+*.md
+.idea
+.vscode
