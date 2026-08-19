@@ -1,0 +1,41 @@
+HELP.md
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+# Environment / secrets
+.env
+application-local.properties
+
+# Runtime config dir — holds the real Atlas URI + secrets, never commit.
+# Spring Boot auto-loads ./config/application.properties over the packaged one.
+# Must be /config/* not /config/ — git won't descend into an ignored directory,
+# so the negation below only works when the contents are ignored, not the dir.
+/config/*
+!/config/application.properties.example

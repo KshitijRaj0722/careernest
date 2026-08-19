@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "backend",
+      "runtimeExecutable": "cmd.exe",
+      "runtimeArgs": ["/c", "cd /d D:\\Careernest\\backend && D:\\Careernest\\.tools\\apache-maven-3.9.16\\bin\\mvn.cmd spring-boot:run"],
+      "port": 8080
+    },
+    {
+      "name": "frontend",
+      "runtimeExecutable": "cmd.exe",
+      "runtimeArgs": ["/c", "cd /d D:\\Careernest\\frontend && node node_modules\\vite\\bin\\vite.js"],
+      "port": 5173
+    }
+  ]
+}

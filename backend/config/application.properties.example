@@ -1,0 +1,24 @@
+# Copy this file to `application.properties` (same folder) and fill in real values.
+# That file is gitignored — your Atlas password never reaches the repo.
+#
+# Spring Boot automatically loads ./config/application.properties from the
+# working directory and it overrides src/main/resources/application.properties.
+
+# --- MongoDB Atlas ---
+# From Atlas: Cluster -> Connect -> Drivers -> Java. Replace <db_password> with
+# the DB user's password, and add the database name before the "?".
+# Example shape:
+#   mongodb+srv://USER:PASSWORD@cluster0.xxxxx.mongodb.net/careernest?retryWrites=true&w=majority
+#
+# If your password contains @ : / ? # [ ] or %, it must be percent-encoded
+# (e.g. "p@ss" -> "p%40ss") or the driver will fail to parse the URI.
+spring.data.mongodb.uri=mongodb+srv://<user>:<password>@<cluster-host>/careernest?retryWrites=true&w=majority&serverSelectionTimeoutMS=5000
+
+# --- JWT ---
+# Any random string, minimum 32 characters (HS256 requirement).
+jwt.secret=replace-with-a-long-random-string-at-least-32-chars
+
+# --- Twilio (optional until you wire up SMS) ---
+twilio.account-sid=
+twilio.auth-token=
+twilio.phone-number=
