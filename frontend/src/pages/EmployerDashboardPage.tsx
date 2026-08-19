@@ -19,6 +19,8 @@ export default function EmployerDashboardPage() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  /** null = the form creates a new posting; an id = it edits that posting. */
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const loadJobs = () =>
     jobsApi
@@ -30,19 +32,41 @@ export default function EmployerDashboardPage() {
     void loadJobs();
   }, []);
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setError(null);
     try {
-      await jobsApi.create({ ...form, salary: Number(form.salary) });
-      setForm(EMPTY_FORM);
+      const payload = { ...form, salary: Number(form.salary) };
+      if (editingId) {
+        await jobsApi.update(editingId, payload);
+      } else {
+        await jobsApi.create(payload);
+      }
+      cancelEdit();
       await loadJobs();
     } catch (err) {
       setError((err as Error).message);
     } finally {
       setSaving(false);
     }
+  };
+
+  const startEdit = (job: Job) => {
+    setEditingId(job.id);
+    setForm({
+      title: job.title,
+      description: job.description,
+      location: job.location,
+      salary: job.salary,
+      deadline: job.deadline,
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
   };
 
   const handleDelete = async (id: string) => {
@@ -94,8 +118,10 @@ export default function EmployerDashboardPage() {
       {error && <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
       <section className="mb-10 rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="mb-3 font-medium text-slate-900">Post a new job</h2>
-        <form onSubmit={handleCreate} className="space-y-3">
+        <h2 className="mb-3 font-medium text-slate-900">
+          {editingId ? 'Edit posting' : 'Post a new job'}
+        </h2>
+        <form onSubmit={handleSubmit} className="space-y-3">
           <input
             required
             placeholder="Job title"
@@ -140,13 +166,24 @@ export default function EmployerDashboardPage() {
               className="flex-1 rounded-md border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:outline-none"
             />
           </div>
-          <button
-            type="submit"
-            disabled={saving}
-            className="rounded-md bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
-          >
-            {saving ? 'Posting…' : 'Post job'}
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded-md bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+            >
+              {saving ? 'Saving…' : editingId ? 'Save changes' : 'Post job'}
+            </button>
+            {editingId && (
+              <button
+                type="button"
+                onClick={cancelEdit}
+                className="rounded-md border border-slate-300 px-4 py-2 font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
         </form>
       </section>
 
@@ -155,7 +192,12 @@ export default function EmployerDashboardPage() {
 
       <ul className="space-y-3">
         {jobs.map((job) => (
-          <li key={job.id} className="rounded-lg border border-slate-200 bg-white p-4">
+          <li
+            key={job.id}
+            className={`rounded-lg border bg-white p-4 ${
+              editingId === job.id ? 'border-indigo-400 ring-1 ring-indigo-200' : 'border-slate-200'
+            }`}
+          >
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="font-medium text-slate-900">{job.title}</p>
@@ -169,6 +211,12 @@ export default function EmployerDashboardPage() {
                   className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
                 >
                   {expanded === job.id ? 'Hide' : 'Applicants'}
+                </button>
+                <button
+                  onClick={() => startEdit(job)}
+                  className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                >
+                  Edit
                 </button>
                 <button
                   onClick={() => void handleDelete(job.id)}
